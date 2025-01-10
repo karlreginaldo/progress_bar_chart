@@ -1,5 +1,7 @@
 library progress_bar_chart;
 
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
@@ -16,7 +18,8 @@ class ProgressBarChart extends StatefulWidget {
     this.showLables = true,
     this.colorBlend = true,
     this.totalPercentage = 0,
-    this.unitLabel = '%',
+    this.suffixLabel,
+    this.prefixLabel,
   });
 
   /// A list of [StatisticsItem] objects representing the data to be displayed in the progress bar chart.
@@ -49,8 +52,11 @@ class ProgressBarChart extends StatefulWidget {
   /// Whether to blend the colors of the progress bars (optional).
   final bool colorBlend;
 
-  /// The unit label of the progress values (optional).
-  final String unitLabel;
+  /// The suffix label of the progress bars (optional).
+  final String? suffixLabel;
+
+  /// The prefix label of the progress bars (optional).
+  final String? prefixLabel;
 
   /// The total percentage of the progress bars (optional).
   /// If the total percentage is not provided, it will be calculated automatically.
@@ -71,7 +77,10 @@ class _ProgressBarChartState extends State<ProgressBarChart>
   void initState() {
     super.initState();
 
+    log('overlayChilds: ${widget.values.map((e) => print(e.overlayChild))}');
+
     percentageValues = List<StatisticsItem>.from(widget.values);
+
     percentageValues.sort((a, b) => b.value.compareTo(a.value));
 
     double total = 0;
@@ -188,36 +197,54 @@ class _ProgressBarChartState extends State<ProgressBarChart>
                                           ConnectionState.waiting) {
                                         return Container();
                                       } else {
-                                        return Container(
-                                          width: width * entry.value,
-                                          height: widget.height,
-                                          alignment: Alignment.centerRight,
-                                          child: Tooltip(
-                                            message:
-                                                '${getTitle(itemOrigin.title)}${formatText(itemOrigin.value, original: true)}${widget.unitLabel}',
-                                            triggerMode: TooltipTriggerMode.tap,
-                                            child: SizedBox(
-                                              width: textWidth,
-                                              child: Text(
-                                                '${formatText(itemOrigin.value)} ${textWidth > 60 ? widget.unitLabel : ''}',
-                                                textAlign: TextAlign.center,
-                                                style: TextStyle(
-                                                  color:
-                                                      getTextColor(entry.color),
-                                                  fontSize: widget.height * 0.5,
-                                                  fontWeight: FontWeight.w700,
-                                                  decoration:
-                                                      TextDecoration.none,
+                                        return Stack(
+                                          clipBehavior: Clip.none,
+                                          children: [
+                                            Container(
+                                              width: width * entry.value,
+                                              height: widget.height,
+                                              alignment: Alignment.centerRight,
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    widget.borderRadius != null
+                                                        ? BorderRadius.circular(
+                                                            widget
+                                                                .borderRadius!,
+                                                          )
+                                                        : BorderRadius.zero,
+                                                border: Border.all(
+                                                  color: entry.borderColor ??
+                                                      Colors.transparent,
+                                                  width: 3,
                                                 ),
                                               ),
-                                            ),
-                                          ),
-                                        ).animate().fadeIn();
+                                              child: SizedBox(
+                                                width: textWidth,
+                                                child: Text(
+                                                  '${widget.prefixLabel ?? ''}${formatText(itemOrigin.value)}${textWidth > 60 ? widget.suffixLabel ?? '' : ''}',
+                                                  textAlign: TextAlign.center,
+                                                  style: TextStyle(
+                                                    color: getTextColor(
+                                                        entry.color),
+                                                    fontSize:
+                                                        widget.height * 0.5,
+                                                    fontWeight: FontWeight.w700,
+                                                    decoration:
+                                                        TextDecoration.none,
+                                                  ),
+                                                ),
+                                              ),
+                                            ).animate().fadeIn(),
+                                            Text('${entry.overlayChild}'),
+                                            if (entry.overlayChild != null)
+                                              entry.overlayChild!,
+                                          ],
+                                        );
                                       }
                                     },
                                   );
                                 },
-                              )
+                              ),
                           ],
                         );
                       },
@@ -243,6 +270,12 @@ class StatisticsItem {
   /// Represents the color of the progress bar chart.
   final Color color;
 
+  /// Represents the border color of the progress bar chart.
+  final Color? borderColor;
+
+  /// Represents the overlay child of the progress bar chart.
+  final Widget? overlayChild;
+
   /// Creates a new instance of [StatisticsItem].
   ///
   /// The [color] parameter specifies the color of the item.
@@ -251,6 +284,8 @@ class StatisticsItem {
   StatisticsItem(
     this.color,
     this.value, {
+    this.borderColor,
     this.title,
+    this.overlayChild,
   });
 }

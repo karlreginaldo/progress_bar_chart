@@ -29,7 +29,6 @@ class MyApp extends StatelessWidget {
           height: height,
           borderRadius: 20,
           totalPercentage: 1200,
-          unitLabel: 'kg',
         ),
       ),
     );
